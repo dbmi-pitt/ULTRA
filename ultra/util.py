@@ -147,7 +147,8 @@ def build_dataset(cfg):
 
     ds_cls = getattr(datasets, cls)
     dataset = ds_cls(**data_config)
-
+    dataset.to_on_disk_dataset(root='/home/rdb20/git-repos/ULTRA/datasets', backend='sqlite') ## ADDED BY RDB TO BETTER UNDERSTAND HOW THE DATASETS ARE FORMATTED
+     
     if get_rank() == 0:
         logger.warning("%s dataset" % (cls if "version" not in cfg.dataset else f'{cls}({cfg.dataset.version})'))
         if cls != "JointDataset":

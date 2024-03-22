@@ -1,11 +1,62 @@
-import os
+import os, sys, urllib
+import os.path as osp
 import csv
 import shutil
 import torch
-from torch_geometric.data import Data, InMemoryDataset, download_url, extract_zip
+from torch_geometric.data import Data, InMemoryDataset, extract_zip
 from torch_geometric.datasets import RelLinkPredDataset, WordNet18RR
 
+import fsspec
+
 from ultra.tasks import build_relation_graph
+
+
+def download_url(
+        url: str,
+        folder: str,
+        log: bool = True,
+        filename: str = None # Optional[str] = None,
+):
+    r"""Downloads the content of an URL to a specific folder.
+
+    Args:
+    url (str): The URL.
+    folder (str): The folder.
+    log (bool, optional): If :obj:`False`, will not print anything to the
+        console. (default: :obj:`True`)
+    filename (str, optional): The filename of the downloaded file. If set
+        to :obj:`None`, will correspond to the filename given by the URL.
+        (default: :obj:`None`)
+    """
+    if filename is None:
+        filename = url.rpartition('/')[2]
+        filename = filename if filename[0] == '?' else filename.split('?')[0]
+
+    path = osp.join(folder, filename)
+
+    #if fs.exists(path):  # pragma: no cover
+    if os.path.exists(path):
+        if log and 'pytest' not in sys.modules:
+            print(f'Using existing file {filename}', file=sys.stderr)
+        return path
+
+    if log and 'pytest' not in sys.modules:
+        print(f'Downloading {url}', file=sys.stderr)
+
+    os.makedirs(folder, exist_ok=True)
+
+    #context = ssl._create_unverified_context()
+    data = urllib.request.urlopen(url)
+
+    with fsspec.open(path, 'wb') as f:
+        # workaround for https://bugs.python.org/issue42853
+        while True:
+            chunk = data.read(10 * 1024 * 1024)
+            if not chunk:
+                break
+            f.write(chunk)
+
+    return path
 
 
 class GrailInductiveDataset(InMemoryDataset):
@@ -44,6 +95,8 @@ class GrailInductiveDataset(InMemoryDataset):
             "train_ind.txt", "valid_ind.txt", "test_ind.txt", "train.txt", "valid.txt"
         ]
 
+
+    
     def download(self):
         for url, path in zip(self.urls, self.raw_paths):
             download_path = download_url(url % self.version, self.raw_dir)
@@ -142,11 +195,11 @@ class GrailInductiveDataset(InMemoryDataset):
 class FB15k237Inductive(GrailInductiveDataset):
 
     urls = [
-        "https://raw.githubusercontent.com/kkteru/grail/master/data/fb237_%s_ind/train.txt",
-        "https://raw.githubusercontent.com/kkteru/grail/master/data/fb237_%s_ind/valid.txt",
-        "https://raw.githubusercontent.com/kkteru/grail/master/data/fb237_%s_ind/test.txt",
-        "https://raw.githubusercontent.com/kkteru/grail/master/data/fb237_%s/train.txt",
-        "https://raw.githubusercontent.com/kkteru/grail/master/data/fb237_%s/valid.txt"
+        "http://localhost:9097/https://raw.githubusercontent.com/kkteru/grail/master/data/fb237_%s_ind/train.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/kkteru/grail/master/data/fb237_%s_ind/valid.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/kkteru/grail/master/data/fb237_%s_ind/test.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/kkteru/grail/master/data/fb237_%s/train.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/kkteru/grail/master/data/fb237_%s/valid.txt"
     ]
 
     name = "IndFB15k237"
@@ -157,11 +210,11 @@ class FB15k237Inductive(GrailInductiveDataset):
 class WN18RRInductive(GrailInductiveDataset):
 
     urls = [
-        "https://raw.githubusercontent.com/kkteru/grail/master/data/WN18RR_%s_ind/train.txt",
-        "https://raw.githubusercontent.com/kkteru/grail/master/data/WN18RR_%s_ind/valid.txt",
-        "https://raw.githubusercontent.com/kkteru/grail/master/data/WN18RR_%s_ind/test.txt",
-        "https://raw.githubusercontent.com/kkteru/grail/master/data/WN18RR_%s/train.txt",
-        "https://raw.githubusercontent.com/kkteru/grail/master/data/WN18RR_%s/valid.txt"
+        "http://localhost:9097/https://raw.githubusercontent.com/kkteru/grail/master/data/WN18RR_%s_ind/train.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/kkteru/grail/master/data/WN18RR_%s_ind/valid.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/kkteru/grail/master/data/WN18RR_%s_ind/test.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/kkteru/grail/master/data/WN18RR_%s/train.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/kkteru/grail/master/data/WN18RR_%s/valid.txt"
     ]
 
     name = "IndWN18RR"
@@ -171,11 +224,11 @@ class WN18RRInductive(GrailInductiveDataset):
 
 class NELLInductive(GrailInductiveDataset):
     urls = [
-        "https://raw.githubusercontent.com/kkteru/grail/master/data/nell_%s_ind/train.txt",
-        "https://raw.githubusercontent.com/kkteru/grail/master/data/nell_%s_ind/valid.txt",
-        "https://raw.githubusercontent.com/kkteru/grail/master/data/nell_%s_ind/test.txt",
-        "https://raw.githubusercontent.com/kkteru/grail/master/data/nell_%s/train.txt",
-        "https://raw.githubusercontent.com/kkteru/grail/master/data/nell_%s/valid.txt"
+        "http://localhost:9097/https://raw.githubusercontent.com/kkteru/grail/master/data/nell_%s_ind/train.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/kkteru/grail/master/data/nell_%s_ind/valid.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/kkteru/grail/master/data/nell_%s_ind/test.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/kkteru/grail/master/data/nell_%s/train.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/kkteru/grail/master/data/nell_%s/valid.txt"
     ]
     name = "IndNELL"
 
@@ -358,9 +411,9 @@ class CoDEx(TransductiveDataset):
 
     name = "codex"
     urls = [
-        "https://raw.githubusercontent.com/tsafavi/codex/master/data/triples/%s/train.txt",
-        "https://raw.githubusercontent.com/tsafavi/codex/master/data/triples/%s/valid.txt",
-        "https://raw.githubusercontent.com/tsafavi/codex/master/data/triples/%s/test.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/tsafavi/codex/master/data/triples/%s/train.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/tsafavi/codex/master/data/triples/%s/valid.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/tsafavi/codex/master/data/triples/%s/test.txt",
     ]
     
     def download(self):
@@ -375,7 +428,7 @@ class CoDExSmall(CoDEx):
     #edge: 36543
     #relation: 42
     """
-    url = "https://zenodo.org/record/4281094/files/codex-s.tar.gz"
+    url = "http://localhost:9097/https://zenodo.org/record/4281094/files/codex-s.tar.gz"
     md5 = "63cd8186fc2aeddc154e20cf4a10087e"
     name = "codex-s"
 
@@ -389,7 +442,7 @@ class CoDExMedium(CoDEx):
     #edge: 206205
     #relation: 51
     """
-    url = "https://zenodo.org/record/4281094/files/codex-m.tar.gz"
+    url = "http://localhost:9097/https://zenodo.org/record/4281094/files/codex-m.tar.gz"
     md5 = "43e561cfdca1c6ad9cc2f5b1ca4add76"
     name = "codex-m"
     def __init__(self, root):
@@ -402,7 +455,7 @@ class CoDExLarge(CoDEx):
     #edge: 612437
     #relation: 69
     """
-    url = "https://zenodo.org/record/4281094/files/codex-l.tar.gz"
+    url = "http://localhost:9097/https://zenodo.org/record/4281094/files/codex-l.tar.gz"
     md5 = "9a10f4458c4bd2b16ef9b92b677e0d71"
     name = "codex-l"
     def __init__(self, root):
@@ -416,10 +469,10 @@ class NELL995(TransductiveDataset):
     # training set is made out of facts+train files, so we sum up their samples to build one training graph
 
     urls = [
-        "https://raw.githubusercontent.com/LARS-research/RED-GNN/main/transductive/data/nell/facts.txt",
-        "https://raw.githubusercontent.com/LARS-research/RED-GNN/main/transductive/data/nell/train.txt",
-        "https://raw.githubusercontent.com/LARS-research/RED-GNN/main/transductive/data/nell/valid.txt",
-        "https://raw.githubusercontent.com/LARS-research/RED-GNN/main/transductive/data/nell/test.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/LARS-research/RED-GNN/main/transductive/data/nell/facts.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/LARS-research/RED-GNN/main/transductive/data/nell/train.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/LARS-research/RED-GNN/main/transductive/data/nell/valid.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/LARS-research/RED-GNN/main/transductive/data/nell/test.txt",
     ]
     name = "nell995"
 
@@ -474,9 +527,9 @@ class NELL995(TransductiveDataset):
 class ConceptNet100k(TransductiveDataset):
 
     urls = [
-        "https://raw.githubusercontent.com/guojiapub/BiQUE/master/src_data/conceptnet-100k/train",
-        "https://raw.githubusercontent.com/guojiapub/BiQUE/master/src_data/conceptnet-100k/valid",
-        "https://raw.githubusercontent.com/guojiapub/BiQUE/master/src_data/conceptnet-100k/test",
+        "http://localhost:9097/https://raw.githubusercontent.com/guojiapub/BiQUE/master/src_data/conceptnet-100k/train",
+        "http://localhost:9097/https://raw.githubusercontent.com/guojiapub/BiQUE/master/src_data/conceptnet-100k/valid",
+        "http://localhost:9097/https://raw.githubusercontent.com/guojiapub/BiQUE/master/src_data/conceptnet-100k/test",
     ]
     name = "cnet100k"
     delimiter = "\t"
@@ -484,9 +537,9 @@ class ConceptNet100k(TransductiveDataset):
 
 class DBpedia100k(TransductiveDataset):
     urls = [
-        "https://raw.githubusercontent.com/iieir-km/ComplEx-NNE_AER/master/datasets/DB100K/_train.txt",
-        "https://raw.githubusercontent.com/iieir-km/ComplEx-NNE_AER/master/datasets/DB100K/_valid.txt",
-        "https://raw.githubusercontent.com/iieir-km/ComplEx-NNE_AER/master/datasets/DB100K/_test.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/iieir-km/ComplEx-NNE_AER/master/datasets/DB100K/_train.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/iieir-km/ComplEx-NNE_AER/master/datasets/DB100K/_valid.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/iieir-km/ComplEx-NNE_AER/master/datasets/DB100K/_test.txt",
         ]
     name = "dbp100k"
 
@@ -494,9 +547,9 @@ class DBpedia100k(TransductiveDataset):
 class YAGO310(TransductiveDataset):
 
     urls = [
-        "https://raw.githubusercontent.com/DeepGraphLearning/KnowledgeGraphEmbedding/master/data/YAGO3-10/train.txt",
-        "https://raw.githubusercontent.com/DeepGraphLearning/KnowledgeGraphEmbedding/master/data/YAGO3-10/valid.txt",
-        "https://raw.githubusercontent.com/DeepGraphLearning/KnowledgeGraphEmbedding/master/data/YAGO3-10/test.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/DeepGraphLearning/KnowledgeGraphEmbedding/master/data/YAGO3-10/train.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/DeepGraphLearning/KnowledgeGraphEmbedding/master/data/YAGO3-10/valid.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/DeepGraphLearning/KnowledgeGraphEmbedding/master/data/YAGO3-10/test.txt",
         ]
     name = "yago310"
 
@@ -504,16 +557,16 @@ class YAGO310(TransductiveDataset):
 class Hetionet(TransductiveDataset):
 
     urls = [
-        "https://www.dropbox.com/s/y47bt9oq57h6l5k/train.txt?dl=1",
-        "https://www.dropbox.com/s/a0pbrx9tz3dgsff/valid.txt?dl=1",
-        "https://www.dropbox.com/s/4dhrvg3fyq5tnu4/test.txt?dl=1",
+        "http://localhost:9097/https://www.dropbox.com/s/y47bt9oq57h6l5k/train.txt?dl=1",
+        "http://localhost:9097/https://www.dropbox.com/s/a0pbrx9tz3dgsff/valid.txt?dl=1",
+        "http://localhost:9097/https://www.dropbox.com/s/4dhrvg3fyq5tnu4/test.txt?dl=1",
         ]
     name = "hetionet"
 
 
 class AristoV4(TransductiveDataset):
 
-    url = "https://zenodo.org/record/5942560/files/aristo-v4.zip"
+    url = "http://localhost:9097/https://zenodo.org/record/5942560/files/aristo-v4.zip"
 
     name = "aristov4"
     delimiter = "\t"
@@ -531,7 +584,7 @@ class SparserKG(TransductiveDataset):
     # 5 datasets based on FB/NELL/WD, introduced in https://github.com/THU-KEG/DacKGR
     # re-writing the loading function because dumps are in the format (h, t, r) while the standard is (h, r, t)
 
-    url = "https://raw.githubusercontent.com/THU-KEG/DacKGR/master/data.zip"
+    url = "http://localhost:9097/https://raw.githubusercontent.com/THU-KEG/DacKGR/master/data.zip"
     delimiter = "\t"
     base_name = "SparseKG"
 
@@ -733,10 +786,10 @@ class IngramInductive(InductiveDataset):
 class FBIngram(IngramInductive):
 
     urls = [
-        "https://raw.githubusercontent.com/bdi-lab/InGram/master/data/FB-%s/train.txt",
-        "https://raw.githubusercontent.com/bdi-lab/InGram/master/data/FB-%s/msg.txt",
-        "https://raw.githubusercontent.com/bdi-lab/InGram/master/data/FB-%s/valid.txt",
-        "https://raw.githubusercontent.com/bdi-lab/InGram/master/data/FB-%s/test.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/bdi-lab/InGram/master/data/FB-%s/train.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/bdi-lab/InGram/master/data/FB-%s/msg.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/bdi-lab/InGram/master/data/FB-%s/valid.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/bdi-lab/InGram/master/data/FB-%s/test.txt",
     ]
     name = "fb"
 
@@ -744,20 +797,20 @@ class FBIngram(IngramInductive):
 class WKIngram(IngramInductive):
 
     urls = [
-        "https://raw.githubusercontent.com/bdi-lab/InGram/master/data/WK-%s/train.txt",
-        "https://raw.githubusercontent.com/bdi-lab/InGram/master/data/WK-%s/msg.txt",
-        "https://raw.githubusercontent.com/bdi-lab/InGram/master/data/WK-%s/valid.txt",
-        "https://raw.githubusercontent.com/bdi-lab/InGram/master/data/WK-%s/test.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/bdi-lab/InGram/master/data/WK-%s/train.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/bdi-lab/InGram/master/data/WK-%s/msg.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/bdi-lab/InGram/master/data/WK-%s/valid.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/bdi-lab/InGram/master/data/WK-%s/test.txt",
     ]
     name = "wk"
 
 class NLIngram(IngramInductive):
 
     urls = [
-        "https://raw.githubusercontent.com/bdi-lab/InGram/master/data/NL-%s/train.txt",
-        "https://raw.githubusercontent.com/bdi-lab/InGram/master/data/NL-%s/msg.txt",
-        "https://raw.githubusercontent.com/bdi-lab/InGram/master/data/NL-%s/valid.txt",
-        "https://raw.githubusercontent.com/bdi-lab/InGram/master/data/NL-%s/test.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/bdi-lab/InGram/master/data/NL-%s/train.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/bdi-lab/InGram/master/data/NL-%s/msg.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/bdi-lab/InGram/master/data/NL-%s/valid.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/bdi-lab/InGram/master/data/NL-%s/test.txt",
     ]
     name = "nl"
 
@@ -765,10 +818,10 @@ class NLIngram(IngramInductive):
 class ILPC2022(InductiveDataset):
 
     urls = [
-        "https://raw.githubusercontent.com/pykeen/ilpc2022/master/data/%s/train.txt",
-        "https://raw.githubusercontent.com/pykeen/ilpc2022/master/data/%s/inference.txt",
-        "https://raw.githubusercontent.com/pykeen/ilpc2022/master/data/%s/inference_validation.txt",
-        "https://raw.githubusercontent.com/pykeen/ilpc2022/master/data/%s/inference_test.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/pykeen/ilpc2022/master/data/%s/train.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/pykeen/ilpc2022/master/data/%s/inference.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/pykeen/ilpc2022/master/data/%s/inference_validation.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/pykeen/ilpc2022/master/data/%s/inference_test.txt",
     ]
 
     name = "ilpc2022"
@@ -778,10 +831,10 @@ class HM(InductiveDataset):
     # benchmarks from Hamaguchi et al and Indigo BM
 
     urls = [
-        "https://raw.githubusercontent.com/shuwen-liu-ox/INDIGO/master/data/%s/train/train.txt",
-        "https://raw.githubusercontent.com/shuwen-liu-ox/INDIGO/master/data/%s/test/test-graph.txt",
-        "https://raw.githubusercontent.com/shuwen-liu-ox/INDIGO/master/data/%s/train/valid.txt",
-        "https://raw.githubusercontent.com/shuwen-liu-ox/INDIGO/master/data/%s/test/test-fact.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/shuwen-liu-ox/INDIGO/master/data/%s/train/train.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/shuwen-liu-ox/INDIGO/master/data/%s/test/test-graph.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/shuwen-liu-ox/INDIGO/master/data/%s/train/valid.txt",
+        "http://localhost:9097/https://raw.githubusercontent.com/shuwen-liu-ox/INDIGO/master/data/%s/test/test-fact.txt",
     ]
 
     name = "hm"
@@ -853,7 +906,7 @@ class HM(InductiveDataset):
 class MTDEAInductive(InductiveDataset):
 
     valid_on_inf = False
-    url = "https://reltrans.s3.us-east-2.amazonaws.com/MTDEA_data.zip"
+    url = "http://localhost:9097/https://reltrans.s3.us-east-2.amazonaws.com/MTDEA_data.zip"
     base_name = "mtdea"
 
     def __init__(self, root, version, **kwargs):
